@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>나이스 급식 알리미 | 스마트 알레르기 안심 식단</title>
+  <meta name="description" content="나이스(NEIS) 교육정보 개방포털 공공데이터를 활용한 학교 급식 식단표 및 맞춤형 알레르기 성분 강조 웹 앱">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+</head>
+<body>
+  <div id="app" class="app-container">
+    <!-- 상단 헤더 -->
+    <header class="app-header">
+      <div class="header-content">
+        <div class="brand">
+          <div class="brand-icon">🍱</div>
+          <div>
+            <h1 class="brand-title">나이스 급식 알리미</h1>
+            <p class="brand-subtitle">NEIS 학교 급식 & 스마트 알레르기 안심 필터</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <div class="selected-school-pill" id="currentSchoolBadge" title="클릭하여 학교를 변경하세요">
+            <span class="school-icon">🏫</span>
+            <div class="school-info-text">
+              <strong id="badgeSchoolName">학교 선택 중...</strong>
+              <small id="badgeOfficeName">시도교육청</small>
+            </div>
+            <button class="btn-change-school" id="btnOpenSearch">학교 변경</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 메인 컨테이너 -->
+    <main class="main-content">
+      <!-- 1. 알레르기 설정 섹션 (핵심 기능) -->
+      <section class="card allergy-section">
+        <div class="card-header allergy-header">
+          <div class="title-with-badge">
+            <span class="section-icon">🛡️</span>
+            <div>
+              <h2 class="card-title">알레르기 안심 설정</h2>
+              <p class="card-desc">체크한 알레르기 유발 성분이 포함된 메뉴는 식단표에서 <strong class="text-danger">강렬한 빨간색으로 경고 강조</strong>됩니다.</p>
+            </div>
+          </div>
+          <div class="allergy-counter">
+            선택된 항목 <strong id="selectedAllergyCount" class="count-badge">0</strong>개
+          </div>
+        </div>
+
+        <!-- 퀵 버튼 모음 -->
+        <div class="allergy-quick-actions">
+          <button type="button" class="btn-pill" id="btnSelectCommonAllergies">⚡ 주요 6대 알레르기 (계란·우유·밀·대두·땅콩·견과)</button>
+          <button type="button" class="btn-pill" id="btnSelectAllAllergies">전체 선택</button>
+          <button type="button" class="btn-pill btn-pill-outline" id="btnClearAllergies">전체 해제</button>
+          <span class="save-status" id="allergySaveStatus">✓ 설정 자동 저장됨</span>
+        </div>
+
+        <!-- 19종 나이스 공식 알레르기 체크박스 그리드 -->
+        <div class="allergy-grid" id="allergyCheckboxGrid">
+          <!-- JS로 동적 렌더링 -->
+        </div>
+      </section>
+
+      <!-- 2. 날짜 및 뷰 컨트롤러 -->
+      <section class="controls-section">
+        <div class="date-navigator card">
+          <div class="date-nav-left">
+            <button type="button" class="btn-icon" id="btnPrevDay" title="이전 날짜">◀</button>
+            <button type="button" class="btn-today" id="btnToday">오늘</button>
+            <button type="button" class="btn-icon" id="btnNextDay" title="다음 날짜">▶</button>
+            
+            <div class="date-input-wrapper">
+              <input type="date" id="mealDateInput" class="date-picker-input">
+            </div>
+          </div>
+
+          <div class="date-display-center">
+            <span class="calendar-icon">📅</span>
+            <span id="currentDateDisplay" class="current-date-text">2026년 11월 18일 (수)</span>
+          </div>
+
+          <div class="view-mode-tabs">
+            <button type="button" class="tab-btn active" data-view="daily" id="viewDailyBtn">일간 식단</button>
+            <button type="button" class="tab-btn" data-view="weekly" id="viewWeeklyBtn">주간 식단 모아보기</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. 실시간 알레르기 상태 요약 배너 -->
+      <div id="allergyAlertBanner" class="allergy-alert-banner hidden">
+        <!-- JS로 동적 제어: 알레르기 발견 시 강렬한 경고 배너 표시 -->
+      </div>
+
+      <!-- 4. 식단 표시 영역 (일간 뷰) -->
+      <section id="dailyViewContainer" class="daily-view-container">
+        <!-- 식사 구분 필터 (조식/중식/석식/전체) -->
+        <div class="meal-type-filter" id="mealTypeFilterBar">
+          <button type="button" class="filter-chip active" data-meal-type="ALL">전체 식사</button>
+          <button type="button" class="filter-chip" data-meal-type="1">조식 (아침)</button>
+          <button type="button" class="filter-chip" data-meal-type="2">중식 (점심)</button>
+          <button type="button" class="filter-chip" data-meal-type="3">석식 (저녁)</button>
+        </div>
+
+        <!-- 식단 카드 목록 -->
+        <div id="mealCardsContainer" class="meal-cards-container">
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <p>급식 데이터를 불러오는 중입니다...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. 주간 식단 표시 영역 (주간 뷰) -->
+      <section id="weeklyViewContainer" class="weekly-view-container hidden">
+        <div class="weekly-header">
+          <h3 id="weeklyRangeText">이번 주 식단 (월 ~ 금)</h3>
+          <p class="text-muted">선택하신 알레르기 성분이 각 요일별로 동일하게 빨간색 강조 표시됩니다.</p>
+        </div>
+        <div id="weeklyCardsGrid" class="weekly-cards-grid">
+          <!-- 주간 5일 식단 렌더링 -->
+        </div>
+      </section>
+    </main>
+
+    <!-- 푸터 -->
+    <footer class="app-footer">
+      <div class="footer-content">
+        <p>데이터 제공: <a href="https://open.neis.go.kr" target="_blank" rel="noopener">교육부 나이스(NEIS) 교육정보 개방포털</a> (인증키 연동 완료)</p>
+        <p class="disclaimer">※ 나이스 공공데이터 지침: 식단표의 알레르기 유발 식품 표기는 교육부 표준 19종 식약처 고시 기준 번호(1~19번)를 따릅니다. 체질에 따라 조리실 환경 및 식재료 변경 가능성이 있으므로 심각한 알레르기 질환자는 학교 급식실 영양교사와 반드시 사전 상담하시기 바랍니다.</p>
+      </div>
+    </footer>
+
+    <!-- 학교 검색 모달 -->
+    <div id="searchModal" class="modal-overlay hidden">
+      <div class="modal-window">
+        <div class="modal-header">
+          <h3>학교 찾기</h3>
+          <button type="button" class="modal-close-btn" id="btnCloseSearchModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="schoolSearchForm" class="search-form">
+            <div class="search-input-group">
+              <input type="text" id="schoolSearchInput" placeholder="학교 이름을 입력하세요 (예: 서울고, 경기고, 대치초)" autocomplete="off">
+              <button type="submit" class="btn-search">검색</button>
+            </div>
+          </form>
+
+          <!-- 최근 선택한 학교 목록 -->
+          <div id="recentSchoolsSection" class="recent-schools-section">
+            <div class="section-label">최근 선택한 학교:</div>
+            <div id="recentSchoolsList" class="recent-pills"></div>
+          </div>
+
+          <!-- 검색 결과 목록 -->
+          <div id="searchResultsList" class="search-results-list">
+            <div class="search-placeholder">
+              <span class="icon">🔍</span>
+              <p>학교명을 검색하시면 전국 초·중·고·특수학교 급식 정보를 바로 확인하실 수 있습니다.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 영양 및 원산지 상세 정보 모달 -->
+    <div id="detailModal" class="modal-overlay hidden">
+      <div class="modal-window modal-lg">
+        <div class="modal-header">
+          <h3 id="detailModalTitle">상세 영양 & 원산지 정보</h3>
+          <button type="button" class="modal-close-btn" id="btnCloseDetailModal">&times;</button>
+        </div>
+        <div class="modal-body detail-modal-content">
+          <div class="detail-section">
+            <h4>📊 영양성분 정보</h4>
+            <div id="modalNutrientInfo" class="info-box"></div>
+          </div>
+          <div class="detail-section">
+            <h4>🌱 원산지 표시 정보</h4>
+            <div id="modalOriginInfo" class="info-box"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
